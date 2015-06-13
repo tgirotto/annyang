@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zara - A Virtual Psychologist</title>
+  <meta name="description" content="Zara is a virtual psychologist that you can have a conversation with, and she can tell you what your personality is like." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:image" content="https://www.talater.com/annyang/images/icon_speech.png"/>
+  <meta property="og:title" content="annyang! Easily add speech recognition to your site"/>
+  <meta property="og:url" content="https://www.talater.com/annyang/"/>
+  <meta property="og:site_name" content="annyang"/>
+  <meta property="fb:admins" content="568390229" />
+
+  <!-- loading javascripts -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/annyang/1.6.0/annyang.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+  
+  <script>
+  "use strict";
+
+  // counter to keep track of which question should follow
+  var counter = 1;
+  var out = '';
+  var question = '';
+
+  function add() {
+    counter += 1;
+  }
+
+  // utterance generator, uses Google synthesizer
+  function utter_speech(input) {
+
+    var utterance = new SpeechSynthesisUtterance();
+      utterance.text = input;
+      utterance.rate = 0.90;
+      utterance.lang = 'en-US';
+
+      utterance.onstart = function (event) {
+        annyang.abort();
+        console.log('Zara is speaking at the moment. Speech recognizer has been disabled.');
+      }
+      utterance.onend = function (event) {
+        annyang.start();
+        console.log('Zara has finished asking you a question. Speech recognizer is now enabled.');
+
+      };
+
+     speechSynthesis.speak(utterance);
+  }
+
+  // function to pick the question to utter
+  function questionPicker() {
+    switch (counter) {
+      case 1:
+        question = 'Do you have a lot of friends? How do you pick friends?';
+        break;
+      case 2:
+        question = 'What kind of things do you do when you hang out with your friends?';
+        break;
+      case 3:
+        question = 'What do you like to do at parties? Do you talk to people you do not know?';
+        break;
+      case 4:
+        question = 'Do you make new friends, or just eat food?';
+        break;
+      case 5:
+        question = 'What was your most exciting and adventurous experience?';
+        break;
+      case 6:
+        question = 'Where would you most like to travel to?';
+        break;
+      case 7:
+        question = 'What are your priorities when you plan your trip? Do you care more about the destinations, or travel companions?';
+        break;
+      case 8:
+        question = 'Do you like art or music?';
+        break;
+      case 9:
+        question = 'Do you think you are an artistic or musical person? Why?';
+        break;
+      case 10:
+        question = 'What do you think of a person who spends time exploring unrealistic and impractical, yet intriguing ideas, like a dreamer or an inventor?';
+        break;
+      case 11:
+        question = 'The next question is: How do you manage workplace relationships?';
+        break;
+      case 12:
+        question = 'If your colleague likes to give advice on your work, will you take advice from her?';
+        break;
+      case 13:
+        question = 'How do you deal with unreasonable requests from your boss or colleagues?';
+        break;
+      case 14:
+        question = 'What stresses you out when you do projects?';
+        break;
+      case 15:
+        question = 'What is your work style? Do you prefer working alone, or in groups?';
+        break;
+      case 16:
+        question = 'What particularly attracts you to a job?';
+        break;
+      case 17:
+        question = 'Will you develop a timetable for projects and stick to it?';
+        break;
+      case 18:
+        question = 'Then what is your plan for your future? Do you have a vision of what you will be like in 5 years, or in 10 years?';
+        break;
+      case 19:
+        question = 'If you had children, what would you expect your children to be like?';
+        break;
+      case 20:
+        question = 'Can you comment on the social, political, or economic situation in the world today?';
+        break;
+      case 21:
+        question = 'One last question: In one minute, please tell me a story with a woman, a dog and a tree.';
+        break;
+      default:
+        console.log(out);
+        console.log('You have answered all questions. Please wait while I analyse your personality.');
+        // post result here
+        
+        var response = out;
+        console.log("just before sending")
+        
+        $.post("/evaluate",{'out': out}, function(data){
+          console.log(JSON.parse(data));
+
+          //modify DOM on result
+
+        });
+              
+        counter = 1;
+        question = '';
+        out = '';
+        break;
+    }
+
+    return question;
+  }
+
+  
+  // first we make sure annyang started succesfully
+  if (annyang) {
+
+    // define the functions our commands will run.
+    var hello = function() {
+      $("#hello").slideDown("slow");
+      scrollTo("#section_hello");
+
+      var intro = 'Hello. I am Zara, your virtual psychologist. Please say, lets get started, to begin this test.';
+      utter_speech(intro);
+    };
+
+    var sayThis = function(result) {
+      $('#output').text(result);
+      console.log(result);
+      console.log('Question number: ' + counter);
+      
+      var question_text = questionPicker();
+      add();
+      
+      out += result + ". ";
+      
+      if (question_text != '') {
+        // utter speech after 1.5 seconds delay
+        setTimeout(function() { utter_speech(question_text) }, 1500);
+        //utter_speech(question_text);
+
+        document.getElementById("question").innerHTML = question_text;
+        $("#question").slideDown("slow");
+        scrollTo("#section_question");
+      }
+    }
+
+    var getStarted = function() {
+      var commands2 = {'*say': sayThis};
+      annyang.addCommands(commands2);
+
+      var opening_question = 'Do you have a lot of friends? How do you pick friends?';
+      utter_speech(opening_question);
+      counter = 21;
+
+      document.getElementById("question").innerHTML = opening_question;
+      $("#question").slideDown("slow");
+      scrollTo("#section_question");
+    }
+
+    var repeat = function() {
+      var question_text = questionPicker();
+      if (question_text != '') {
+        //utter repeat question
+        utter_speech(question_text);
+        document.getElementById("question").innerHTML = question_text;
+        $("#question").slideDown("slow");
+        scrollTo("#section_question");
+      }
+    }
+
+    // define our commands.
+    // * The key is what you want your users to say say.
+    // * The value is the action to do.
+    //   You can pass a function, a function name (as a string), or write your function as part of the commands object.
+    var commands = {
+      'hello (there)':                     hello,
+      'hi (Zara)':                         hello,
+      'nice to meet you':                  hello,
+      'how are you':                       hello,
+      'can you repeat that (question)':    repeat, 
+      'repeat the question (please)':      repeat,
+      'repeat (that)':                     repeat,
+      'let\'s get started':                getStarted,
+      'let\'s start':                      getStarted,
+      '(can we) start (please)':           getStarted,
+      '(let\'s) begin':                    getStarted,
+    };
+
+    // OPTIONAL: activate debug mode for detailed logging in the console
+    annyang.debug(true);
+
+    // Add voice commands to respond to
+    annyang.addCommands(commands);
+
+    // OPTIONAL: Set a language for speech recognition (defaults to English)
+    annyang.setLanguage('en');
+
+    // Error handling
+    annyang.addCallback('resultNoMatch', function() {
+      console.log('Sorry, I could not understand that.');
+    });
+
+    // Start listening. You can call this here, or attach this call to an event, button, etc.
+    annyang.start();
+  } else {
+    $(document).ready(function() {
+      $('#unsupported').fadeIn('fast');
+    });
+  }
+
+  var scrollTo = function(identifier, speed) {
+    $('html, body').animate({
+        scrollTop: $(identifier).offset().top
+    }, speed || 1000);
+  }
+  </script>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <section id="section_header">
+    <h1><em>Zara</em>A virtual psychologist</h1>
+    <h2>Hi! I am a virtual psychologist. I will ask you a few questions and then tell you what your personality is like after our conversation.</h2>
+    <h2>To begin, say 'Lets get started'.</h2>
+    <img src="img/splash_img_1.png">
+    <img src="img/splash_img_2.png">
+    <img src="img/splash_img_3.png">
+  </section>
+  <section id="section_hello">
+    <p><em>Go ahead, try it&hellip;</em></p>
+    <p class="voice_instructions">Say "Hello!"</p>
+    <p id="hello" class="hidden">Hello! I am Zara. Glad to help!</p>
+  </section>
+  <section id="section_question">
+    <p><em>Hey! The question I will ask you appears here...</em></p>
+    <p id="question" class="voice_instructions hidden">My first question...</p>
+  </section>
+  <section id="section_result">
+    <p><em>Your personality will appear here once you complete the test...</em></p>
+    <p id="result" class="voice_instructions hidden">Your personality result...</p>
+  </section>
+  <section id="section_footer">
+    <div class="copyright">
+      <p>&copy; 2015 Ivo Technologies. All rights reserved.</p>
+    </div>
+  </section>
+  <div id="unsupported" class="hidden">
+    <h4>It looks like your browser doesn't support speech recognition.</h4>
+    <p>annyang plays nicely with all browsers, progressively enhancing modern browsers that support the SpeechRecognition standard, while leaving users with older browsers unaffected.</p>
+    <p>Please use a desktop browser like Chrome.</p>
+  </div>
+
+  <script>
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-24775009-1']);
+    _gaq.push(['_trackPageview']);
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+  <script src="js/highlight.pack.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+</body>
+</html>
